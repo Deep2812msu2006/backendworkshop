@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Award, DollarSign, Clock, MapPin, CheckCircle, ArrowRight, UserCheck } from 'lucide-react';
 import { Button } from '../components/Button';
-import { dummyUser } from '../data/user';
-import { dummyBookings, dummyStats, dummyActivities } from '../data/bookings';
+import { dummyStats, dummyActivities } from '../data/bookings';
+import { resortsData } from '../data/resorts';
 import { supabase } from '../utils/supabaseClient';
 
 // TODO: Replace dummy data using API
@@ -12,22 +12,66 @@ import { supabase } from '../utils/supabaseClient';
 
 export function DashboardPage() {
   const [userName, setUserName] = useState('Loading...');
+  const [bookings, setBookings] = useState([]);
+  const [stats, setStats] = useState({
+    totalBookings: 0,
+    upcomingTrips: 0,
+    rewardsPoints: 0,
+    totalSpent: '$0'
+  });
 
   useEffect(() => {
-    async function fetchName() {
+    async function fetchNameAndBookings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from('users').select('name').eq('id', user.id).single();
-        if (data && data.name) {
-          setUserName(data.name);
+        // Fetch User Profile Name
+        const { data: profileData } = await supabase.from('users').select('name').eq('id', user.id).single();
+        if (profileData && profileData.name) {
+          setUserName(profileData.name);
         } else {
           setUserName(user.email.split('@')[0]);
+        }
+
+        // Fetch User Bookings
+        const { data: userBookings, error } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('user_id', user.id);
+          
+        if (userBookings && !error) {
+          const totalBookings = userBookings.length;
+          const upcomingTrips = userBookings.filter(b => 
+            b.status === 'Upcoming' || b.status === 'Confirmed' || new Date(b.check_in) > new Date()
+          ).length;
+          const sumSpent = userBookings.reduce((sum, b) => sum + Number(b.total_price || 0), 0);
+
+          setStats({
+            totalBookings,
+            upcomingTrips,
+            rewardsPoints: Math.floor(sumSpent * 2.5), // 2.5 reward points per dollar spent
+            totalSpent: `$${sumSpent.toLocaleString()}`
+          });
+
+          const enrichedBookings = userBookings.map(b => {
+            const resort = resortsData.find(r => r.id === b.resort_id);
+            return {
+              id: b.id,
+              resortName: resort ? resort.name : 'Unknown Resort',
+              image: resort ? resort.image : 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
+              location: resort ? resort.location : 'Unknown Location',
+              status: b.status || 'Confirmed',
+              checkIn: b.check_in,
+              checkOut: b.check_out,
+              totalPrice: b.total_price
+            };
+          });
+          setBookings(enrichedBookings);
         }
       } else {
         setUserName('Guest');
       }
     }
-    fetchName();
+    fetchNameAndBookings();
   }, []);
 
   return (
@@ -71,7 +115,7 @@ export function DashboardPage() {
           </div>
           <div>
             <span className="text-xs text-slate-400 block font-medium">Total Bookings</span>
-            <span className="text-2xl font-black text-white">{dummyStats.totalBookings}</span>
+            <span className="text-2xl font-black text-white">{stats.totalBookings}</span>
           </div>
         </div>
 
@@ -81,7 +125,7 @@ export function DashboardPage() {
           </div>
           <div>
             <span className="text-xs text-slate-400 block font-medium">Upcoming Trips</span>
-            <span className="text-2xl font-black text-white">{dummyStats.upcomingTrips}</span>
+            <span className="text-2xl font-black text-white">{stats.upcomingTrips}</span>
           </div>
         </div>
 
@@ -91,7 +135,7 @@ export function DashboardPage() {
           </div>
           <div>
             <span className="text-xs text-slate-400 block font-medium">Reward Points</span>
-            <span className="text-2xl font-black text-white">{dummyStats.rewardsPoints.toLocaleString()}</span>
+            <span className="text-2xl font-black text-white">{stats.rewardsPoints.toLocaleString()}</span>
           </div>
         </div>
 
@@ -101,7 +145,7 @@ export function DashboardPage() {
           </div>
           <div>
             <span className="text-xs text-slate-400 block font-medium">Total Investment</span>
-            <span className="text-2xl font-black text-white">{dummyStats.totalSpent}</span>
+            <span className="text-2xl font-black text-white">{stats.totalSpent}</span>
           </div>
         </div>
 
@@ -118,7 +162,10 @@ export function DashboardPage() {
           </div>
 
           <div className="space-y-4">
-            {dummyBookings.map((booking) => (
+            {bookings.length === 0 ? (
+              <div className="text-slate-400 text-sm text-center py-6">You have no upcoming bookings.</div>
+            ) : (
+              bookings.map((booking) => (
               <div
                 key={booking.id}
                 className="glass-card p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-5 glass-card-hover"
@@ -159,7 +206,7 @@ export function DashboardPage() {
                   <span className="text-sm font-bold text-sky-400">${booking.totalPrice}</span>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
 
