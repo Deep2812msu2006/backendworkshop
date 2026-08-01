@@ -16,24 +16,8 @@ CREATE TABLE users (
   id TEXT PRIMARY KEY,
   name TEXT,
   email TEXT,
-  phone TEXT,
-  address TEXT,
-  avatar TEXT,
   member_since TEXT,
   membership_tier TEXT
-);
-
--- The Resorts Table
-CREATE TABLE resorts (
-  id TEXT PRIMARY KEY,
-  name TEXT,
-  location TEXT,
-  price NUMERIC,
-  rating NUMERIC,
-  reviews_count INTEGER,
-  image TEXT,
-  description TEXT,
-  featured BOOLEAN
 );
 
 -- The Bookings Table
@@ -48,14 +32,6 @@ CREATE TABLE bookings (
   guests INTEGER,
   total_price NUMERIC,
   status TEXT
-);
-
--- The Activities Table
-CREATE TABLE activities (
-  id TEXT PRIMARY KEY,
-  title TEXT,
-  description TEXT,
-  time TEXT
 );
 
 -- ==========================================

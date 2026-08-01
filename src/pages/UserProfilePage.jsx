@@ -1,24 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Camera, Save, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { supabase } from '../utils/supabaseClient';
 import { dummyUser } from '../data/user';
 
-// TODO: Connect Update Profile API
-// TODO: Profile API
-// TODO: Connect Supabase Storage for avatar upload
-
 export function UserProfilePage() {
+  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
     name: dummyUser.name,
     email: dummyUser.email,
     phone: dummyUser.phone,
     address: dummyUser.address,
-    avatar: dummyUser.avatar
+    avatar: dummyUser.avatar,
+    memberSince: dummyUser.memberSince,
+    membershipTier: dummyUser.membershipTier
   });
 
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    async function fetchUserProfile() {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          setLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching user profile:", error);
+        } else if (data) {
+          setProfile({
+            name: data.name || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            memberSince: data.member_since || 'Recently',
+            membershipTier: data.membership_tier || 'Standard Member'
+          });
+        }
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUserProfile();
+  }, []);
 
   const handleChange = (e) => {
     setProfile(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -34,16 +71,19 @@ export function UserProfilePage() {
         throw new Error("You must be logged in to update your profile.");
       }
 
-      // 2. Update their data in our custom 'users' table
+      // 2. Update (or Insert) their data in our custom 'users' table
       const { error } = await supabase
         .from('users')
-        .update({
+        .upsert({
+          id: user.id,
           name: profile.name,
+          email: profile.email,
           phone: profile.phone,
           address: profile.address,
-          avatar: profile.avatar
-        })
-        .eq('id', user.id);
+          avatar: profile.avatar,
+          member_since: profile.memberSince || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          membership_tier: profile.membershipTier || 'Standard Member'
+        });
 
       if (error) throw error;
 
@@ -66,9 +106,11 @@ export function UserProfilePage() {
         </div>
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold">
           <ShieldCheck className="w-4 h-4" />
-          <span>{dummyUser.membershipTier}</span>
+          <span>{profile.membershipTier}</span>
         </div>
       </div>
+
+      {loading && <div className="text-sky-400 text-sm animate-pulse">Loading profile data from Supabase...</div>}
 
       {savedSuccess && (
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-3 animate-fadeIn text-sm">
@@ -99,7 +141,7 @@ export function UserProfilePage() {
 
           <div className="space-y-1">
             <h3 className="text-base font-bold text-white">{profile.name}</h3>
-            <p className="text-xs text-slate-400">Member since {dummyUser.memberSince}</p>
+            <p className="text-xs text-slate-400">Member since {profile.memberSince}</p>
           </div>
 
           <div className="w-full pt-4 border-t border-slate-800 text-left space-y-2">
