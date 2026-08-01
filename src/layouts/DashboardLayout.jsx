@@ -1,23 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Calendar, User, LogOut, Menu, X, Palmtree } from 'lucide-react';
 import { dummyUser } from '../data/user';
-
-// TODO: Connect Supabase Authentication
-// TODO: Replace dummy data using API
+import { supabase } from '../utils/supabaseClient';
 
 export function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const [userProfile, setUserProfile] = useState({
+    name: 'Loading...',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    membershipTier: ''
+  });
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('users').select('name, membership_tier').eq('id', user.id).single();
+        if (data) {
+          setUserProfile({
+            name: data.name || user.email.split('@')[0],
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            membershipTier: data.membership_tier || 'Standard Member'
+          });
+        }
+      } else {
+        setUserProfile({
+          name: 'Guest (Not Logged In)',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+          membershipTier: 'Visitor'
+        });
+      }
+    }
+    fetchUser();
+  }, []);
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'My Profile', path: '/profile', icon: User }
   ];
 
-  const handleLogout = () => {
-    // TODO: Connect Supabase Logout
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate('/login');
   };
 
@@ -58,13 +84,13 @@ export function DashboardLayout() {
           {/* User Profile Mini */}
           <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-3">
             <img
-              src={dummyUser.avatar}
-              alt={dummyUser.name}
-              className="w-10 h-10 rounded-full object-cover border border-sky-400/40"
+              src={userProfile.avatar}
+              alt={userProfile.name}
+              className="w-10 h-10 rounded-xl object-cover border-2 border-sky-400/30"
             />
-            <div className="overflow-hidden">
-              <h4 className="text-sm font-bold text-white truncate">{dummyUser.name}</h4>
-              <span className="text-[11px] text-sky-400 font-medium block truncate">{dummyUser.membershipTier}</span>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-bold text-white truncate">{userProfile.name}</h4>
+              <span className="text-[11px] text-sky-400 font-medium block truncate">{userProfile.membershipTier}</span>
             </div>
           </div>
 

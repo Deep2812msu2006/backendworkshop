@@ -8,13 +8,13 @@ import { dummyUser } from '../data/user';
 export function UserProfilePage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
-    name: dummyUser.name,
-    email: dummyUser.email,
-    phone: dummyUser.phone,
-    address: dummyUser.address,
-    avatar: dummyUser.avatar,
-    memberSince: dummyUser.memberSince,
-    membershipTier: dummyUser.membershipTier
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    memberSince: '',
+    membershipTier: ''
   });
 
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -24,6 +24,8 @@ export function UserProfilePage() {
       try {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
+          // Fallback if not logged in
+          setProfile(prev => ({ ...prev, name: 'Guest (Not Logged In)' }));
           setLoading(false);
           return;
         }
@@ -86,9 +88,7 @@ export function UserProfilePage() {
           id: user.id,
           name: profile.name,
           email: profile.email,
-          phone: profile.phone,
-          address: profile.address,
-          avatar: profile.avatar,
+          // phone, address, and avatar were removed from the SQL table
           member_since: profile.memberSince || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
           membership_tier: profile.membershipTier || 'Standard Member'
         });

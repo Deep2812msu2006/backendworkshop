@@ -1,15 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Award, DollarSign, Clock, MapPin, CheckCircle, ArrowRight, UserCheck } from 'lucide-react';
 import { Button } from '../components/Button';
 import { dummyUser } from '../data/user';
 import { dummyBookings, dummyStats, dummyActivities } from '../data/bookings';
+import { supabase } from '../utils/supabaseClient';
 
 // TODO: Replace dummy data using API
 // TODO: Booking API
 // TODO: Profile API
 
 export function DashboardPage() {
+  const [userName, setUserName] = useState('Loading...');
+
+  useEffect(() => {
+    async function fetchName() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('users').select('name').eq('id', user.id).single();
+        if (data && data.name) {
+          setUserName(data.name);
+        } else {
+          setUserName(user.email.split('@')[0]);
+        }
+      } else {
+        setUserName('Guest');
+      }
+    }
+    fetchName();
+  }, []);
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       
@@ -21,7 +41,7 @@ export function DashboardPage() {
             <span>VIP Member Portal</span>
           </div>
           <h1 className="text-2xl md:text-4xl font-extrabold text-white">
-            Welcome Back, {dummyUser.name}!
+            Welcome Back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500">{userName}</span>!
           </h1>
           <p className="text-slate-400 text-sm">
             Manage your active bookings, view membership reward points, and plan upcoming retreats.
