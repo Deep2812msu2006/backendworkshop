@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle2, KeyRound } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 
 // TODO: Connect SMTP email later
 // TODO: Connect Supabase Password Reset
@@ -10,11 +11,30 @@ import { Input } from '../components/Input';
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Connect SMTP email / Supabase password reset link
-    setSubmitted(true);
+    setErrorMsg('');
+
+    if (!isSupabaseConfigured) {
+      // Local Workshop Mode
+      setSubmitted(true);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'http://localhost:5173/profile',
+      });
+
+      if (error) throw error;
+
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Password reset error:", err);
+      setErrorMsg(err.message);
+    }
   };
 
   return (
@@ -35,6 +55,12 @@ export function ForgotPasswordPage() {
             Enter your email to receive a password reset instructions link.
           </p>
         </div>
+
+        {errorMsg && (
+          <div className="p-3 bg-red-500/20 border border-red-500 rounded-xl text-red-200 text-xs text-center font-medium">
+            {errorMsg}
+          </div>
+        )}
 
         {submitted ? (
           <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3">
