@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Camera, Save, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { supabase } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { dummyUser } from '../data/user';
 
 export function UserProfilePage() {
@@ -63,6 +63,14 @@ export function UserProfilePage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+
+    if (!isSupabaseConfigured) {
+      // Local Workshop Mode (without .env)
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 4000);
+      return;
+    }
+
     try {
       // 1. Get the currently logged-in user
       const { data: { user }, error: authError } = await supabase.auth.getUser();

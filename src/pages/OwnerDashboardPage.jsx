@@ -3,7 +3,7 @@ import { PlusCircle, Building2, Calendar, DollarSign, Sparkles, CheckCircle2, Tr
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { resortsData, dummyEventsData } from '../data/resorts';
-import { supabase } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 
 // TODO: Create Resort API (Supabase Insert)
 // TODO: Create Event Activity API (Supabase Insert)
@@ -42,6 +42,31 @@ export function OwnerDashboardPage() {
   const handleResortSubmit = async (e) => {
     e.preventDefault();
     const newResortId = String(Date.now());
+
+    const newResort = {
+      id: newResortId,
+      name: resortForm.name,
+      location: resortForm.location,
+      price: Number(resortForm.price),
+      rating: Number(resortForm.rating),
+      reviewsCount: 1,
+      image: resortForm.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80",
+      gallery: [resortForm.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80"],
+      description: resortForm.description,
+      featured: true,
+      facilities: resortForm.facilities.split(',').map(f => f.trim()).filter(Boolean),
+      reviews: []
+    };
+
+    if (!isSupabaseConfigured) {
+      // Local Workshop Mode (without .env)
+      setResortsList([newResort, ...resortsList]);
+      resortsData.unshift(newResort);
+      setResortSuccess(true);
+      setResortForm({ name: '', location: '', price: '', rating: '4.9', image: '', description: '', facilities: '' });
+      setTimeout(() => setResortSuccess(false), 4000);
+      return;
+    }
     
     try {
       const { error } = await supabase.from('resorts').insert([{
@@ -58,23 +83,8 @@ export function OwnerDashboardPage() {
 
       if (error) throw error;
 
-      const newResort = {
-        id: newResortId,
-        name: resortForm.name,
-        location: resortForm.location,
-        price: Number(resortForm.price),
-        rating: Number(resortForm.rating),
-        reviewsCount: 1,
-        image: resortForm.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80",
-        gallery: [resortForm.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80"],
-        description: resortForm.description,
-        featured: true,
-        facilities: resortForm.facilities.split(',').map(f => f.trim()).filter(Boolean),
-        reviews: []
-      };
-
       setResortsList([newResort, ...resortsList]);
-      resortsData.unshift(newResort); // update shared state
+      resortsData.unshift(newResort);
       setResortSuccess(true);
       setResortForm({ name: '', location: '', price: '', rating: '4.9', image: '', description: '', facilities: '' });
       setTimeout(() => setResortSuccess(false), 4000);

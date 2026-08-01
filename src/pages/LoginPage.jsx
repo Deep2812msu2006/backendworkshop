@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Palmtree, LogIn } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { supabase } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 
 // TODO: Connect Supabase Authentication
 // TODO: Connect Supabase Login
@@ -18,6 +18,13 @@ export function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (!isSupabaseConfigured) {
+      // Local Workshop Mode (without .env)
+      alert('⚡ Local Workshop Mode: Signed in locally!\n\n(Supabase is not configured in .env yet. Once students add .env, authentication will run through Supabase!)');
+      navigate('/dashboard');
+      return;
+    }
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({

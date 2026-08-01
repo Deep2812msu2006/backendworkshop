@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Palmtree, Menu, X, User, LogIn, ShieldAlert } from 'lucide-react';
 import { Button } from './Button';
 
+import { isSupabaseConfigured } from '../utils/supabaseClient';
+
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
@@ -17,7 +19,19 @@ export function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-panel border-b border-sky-500/10 backdrop-blur-xl">
+    <>
+      {!isSupabaseConfigured && (
+        <div className="bg-gradient-to-r from-amber-600/90 via-amber-500/90 to-orange-600/90 text-white text-[11px] sm:text-xs font-semibold py-1.5 px-4 text-center tracking-wide flex items-center justify-center gap-2 shadow-md">
+          <span className="bg-black/30 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-widest">
+            Workshop Local Mode
+          </span>
+          <span>
+            Supabase disconnected (<code className="bg-black/20 px-1 rounded font-mono">.env</code> missing). Actions update frontend state locally. Add <code className="bg-black/20 px-1 rounded font-mono">.env</code> to connect database!
+          </span>
+        </div>
+      )}
+      <header className="sticky top-0 z-50 w-full glass-panel border-b border-sky-500/10 backdrop-blur-xl">
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           
@@ -123,5 +137,6 @@ export function Navbar() {
         </div>
       )}
     </header>
+    </>
   );
 }

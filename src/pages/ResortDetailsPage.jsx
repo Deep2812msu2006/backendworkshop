@@ -5,7 +5,7 @@ import { Button } from '../components/Button';
 import { ReviewCard } from '../components/ReviewCard';
 import { Loader } from '../components/Loader';
 import { resortsData } from '../data/resorts';
-import { supabase } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 
 // TODO: Fetch Resorts from API
 // TODO: Booking API
@@ -24,6 +24,12 @@ export function ResortDetailsPage() {
 
   const handleBooking = async (e) => {
     e.preventDefault();
+
+    if (!isSupabaseConfigured) {
+      // Local Workshop Mode (without .env)
+      setBookingSuccess(true);
+      return;
+    }
     
     try {
       const { data: { user } } = await supabase.auth.getUser();

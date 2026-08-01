@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Palmtree, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { supabase } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 
 // TODO: Connect Supabase Authentication
 // TODO: Connect Google OAuth
@@ -29,6 +29,13 @@ export function SignUpPage() {
 
     if (formData.password !== formData.confirmPassword) {
       setErrorMsg('Passwords do not match');
+      return;
+    }
+
+    if (!isSupabaseConfigured) {
+      // Local Workshop Mode (without .env)
+      alert('⚡ Local Workshop Mode: Account created locally!\n\n(Note: Without .env, this is in-memory only. Once students add .env and connect Supabase, signups will save directly to the database!)');
+      navigate('/login');
       return;
     }
 
