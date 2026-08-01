@@ -24,8 +24,22 @@ export function ForgotPasswordPage() {
     }
 
     try {
+      // 1. Check if an account exists in custom 'users' table
+      const { data: userExists } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (!userExists) {
+        setErrorMsg('No registered account found with this email address. Please check your email or sign up first.');
+        return;
+      }
+
+      // 2. Send password recovery link pointing to our website's /reset-password route
+      const redirectUrl = `${window.location.origin}/reset-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'http://localhost:5173/profile',
+        redirectTo: redirectUrl,
       });
 
       if (error) throw error;
@@ -33,7 +47,7 @@ export function ForgotPasswordPage() {
       setSubmitted(true);
     } catch (err) {
       console.error("Password reset error:", err);
-      setErrorMsg(err.message);
+      setErrorMsg(typeof err === 'string' ? err : (err?.message || 'Failed to send password reset email'));
     }
   };
 

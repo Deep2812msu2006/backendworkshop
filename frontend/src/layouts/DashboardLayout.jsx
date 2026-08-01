@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Calendar, User, LogOut, Menu, X, Palmtree } from 'lucide-react';
 import { dummyUser } from '../data/user';
 import { supabase } from '../utils/supabaseClient';
+import { getInitials } from '../pages/UserProfilePage';
 
 export function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -10,7 +11,7 @@ export function DashboardLayout() {
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState({
     name: 'Loading...',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    avatar: '',
     membershipTier: ''
   });
 
@@ -23,13 +24,13 @@ export function DashboardLayout() {
           const defaultName = user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'User');
           setUserProfile({
             name: data?.name || defaultName,
-            avatar: data?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            avatar: data?.avatar || '',
             membershipTier: data?.membership_tier || 'Standard Member'
           });
         } else {
           setUserProfile({
             name: 'Guest (Not Logged In)',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            avatar: '',
             membershipTier: 'Visitor'
           });
         }
@@ -86,11 +87,17 @@ export function DashboardLayout() {
 
           {/* User Profile Mini */}
           <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-3">
-            <img
-              src={userProfile.avatar}
-              alt={userProfile.name}
-              className="w-10 h-10 rounded-xl object-cover border-2 border-sky-400/30"
-            />
+            {userProfile.avatar && !userProfile.avatar.includes('unsplash') ? (
+              <img
+                src={userProfile.avatar}
+                alt={userProfile.name}
+                className="w-10 h-10 rounded-xl object-cover border-2 border-sky-400/30 shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white font-black text-sm border-2 border-sky-400/30 shrink-0 uppercase tracking-wider">
+                {getInitials(userProfile.name)}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-bold text-white truncate">{userProfile.name}</h4>
               <span className="text-[11px] text-sky-400 font-medium block truncate">{userProfile.membershipTier}</span>

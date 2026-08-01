@@ -5,6 +5,15 @@ import { Input } from '../components/Input';
 import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { dummyUser } from '../data/user';
 
+export function getInitials(name) {
+  if (!name) return 'US';
+  const parts = name.trim().split(' ').filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
 export function UserProfilePage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
@@ -12,7 +21,7 @@ export function UserProfilePage() {
     email: '',
     phone: '',
     address: '',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    avatar: '',
     memberSince: '',
     membershipTier: ''
   });
@@ -56,7 +65,7 @@ export function UserProfilePage() {
             email: data.email || user.email || '',
             phone: data.phone || '',
             address: data.address || '',
-            avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            avatar: data.avatar || '',
             memberSince: data.member_since || 'Recently',
             membershipTier: data.membership_tier || 'Standard Member'
           });
@@ -67,7 +76,7 @@ export function UserProfilePage() {
             email: user.email || '',
             phone: '',
             address: '',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            avatar: '',
             memberSince: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
             membershipTier: 'Standard Member'
           };
@@ -168,11 +177,17 @@ export function UserProfilePage() {
         {/* Avatar Section */}
         <div className="md:col-span-1 glass-card p-6 rounded-3xl border border-slate-800 text-center space-y-4 flex flex-col items-center justify-center">
           <div className="relative group">
-            <img
-              src={profile.avatar}
-              alt={profile.name}
-              className="w-32 h-32 rounded-full object-cover border-4 border-sky-400/40 shadow-xl"
-            />
+            {profile.avatar && !profile.avatar.includes('unsplash') ? (
+              <img
+                src={profile.avatar}
+                alt={profile.name}
+                className="w-32 h-32 rounded-full object-cover border-4 border-sky-400/40 shadow-xl"
+              />
+            ) : (
+              <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-sky-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white text-3xl font-black border-4 border-sky-400/40 shadow-2xl tracking-widest uppercase">
+                {getInitials(profile.name)}
+              </div>
+            )}
             <input 
               type="file" 
               accept="image/*" 

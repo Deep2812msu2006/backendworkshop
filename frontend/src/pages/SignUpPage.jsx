@@ -19,9 +19,45 @@ export function SignUpPage() {
   });
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [showOtpPanel, setShowOtpPanel] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [verifying, setVerifying] = useState(false);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleOtpChange = (element, index) => {
+    const val = element.value;
+    if (isNaN(val)) return false;
+
+    const newOtp = [...otp];
+    newOtp[index] = val.slice(-1);
+    setOtp(newOtp);
+
+    // Auto-focus next input field
+    if (val !== '' && element.nextSibling) {
+      element.nextSibling.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').trim().slice(0, 6);
+    if (/^\d+$/.test(pastedData)) {
+      const digits = pastedData.split('');
+      const newOtp = ['', '', '', '', '', ''];
+      digits.forEach((digit, idx) => {
+        if (idx < 6) newOtp[idx] = digit;
+      });
+      setOtp(newOtp);
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === 'Backspace' && !otp[index] && e.target.previousSibling) {
+      e.target.previousSibling.focus();
+    }
   };
 
   const handleSignUp = async (e) => {
@@ -36,7 +72,8 @@ export function SignUpPage() {
 
     if (!isSupabaseConfigured) {
       // Local Workshop Mode (without .env)
-      setSuccessMsg('⚡ Local Workshop Mode: Account created in frontend memory! (Connect Supabase in .env to persist signups in database)');
+      setShowOtpPanel(true);
+      setSuccessMsg('⚡ Local Workshop Mode: Enter any 6-digit code (e.g. 123456) to verify and proceed.');
       return;
     }
 
@@ -49,30 +86,76 @@ export function SignUpPage() {
 
       if (error) throw error;
 
-      // 2. Insert extra data into our custom 'users' table
+      // 2. Insert extra data into custom 'users' table
       if (data.user) {
-        const { error: insertError } = await supabase.from('users').insert([{
+        await supabase.from('users').upsert({
           id: data.user.id,
           name: formData.fullName,
           email: formData.email,
           member_since: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
           membership_tier: 'Standard Member'
-        }]);
-
-        if (insertError) {
-          console.error('Error inserting into users table:', insertError);
-        }
+        });
       }
 
-      setSuccessMsg('🎉 Account created successfully! Please check your email inbox to confirm your registration.');
+      setShowOtpPanel(true);
+      setSuccessMsg(`🎉 Account created! We sent a 6-digit OTP code to ${formData.email}. Please enter it below:`);
     } catch (err) {
-      setErrorMsg(err.message);
+      setErrorMsg(typeof err === 'string' ? err : (err?.message || 'An error occurred during signup'));
     }
   };
 
-  const handleGoogleAuth = () => {
-    // TODO: Connect Google OAuth
-    navigate('/dashboard');
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    const token = otp.join('');
+    if (token.length < 6) {
+      setErrorMsg('Please enter all 6 digits of your verification code.');
+      return;
+    }
+
+    setVerifying(true);
+    setErrorMsg('');
+
+    if (!isSupabaseConfigured) {
+      navigate('/dashboard');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: formData.email,
+        token: token,
+        type: 'signup'
+      });
+
+      if (error) throw error;
+
+      navigate('/dashboard');
+    } catch (err) {
+      setErrorMsg(err.message || 'Invalid or expired 4-digit OTP code.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setErrorMsg('');
+    if (!isSupabaseConfigured) {
+      // Local Workshop Mode
+      navigate('/dashboard');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      setErrorMsg(typeof err === 'string' ? err : (err?.message || 'Google Sign-In failed'));
+    }
   };
 
   return (
@@ -88,32 +171,57 @@ export function SignUpPage() {
           <p className="text-xs text-slate-400">Join Aura Resorts VIP Membership today</p>
         </div>
 
-        {errorMsg && (
+        {typeof errorMsg === 'string' && errorMsg.trim() !== '' && !successMsg && (
           <div className="p-3 bg-red-500/20 border border-red-500 rounded-xl text-red-200 text-xs text-center font-medium">
             {errorMsg}
           </div>
         )}
 
-        {successMsg ? (
-          <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-4 animate-fadeIn">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <CheckCircle2 className="w-7 h-7" />
+        {showOtpPanel ? (
+          <form onSubmit={handleVerifyOtp} className="space-y-6 animate-fadeIn">
+            <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-center space-y-2">
+              <CheckCircle2 className="w-8 h-8 text-sky-400 mx-auto" />
+              <h3 className="font-extrabold text-white text-base">Enter Verification Code</h3>
+              <p className="text-xs text-slate-300 leading-relaxed font-light">
+                {successMsg}
+              </p>
             </div>
-            <h3 className="font-extrabold text-white text-lg">Registration Successful!</h3>
-            <p className="text-xs text-slate-300 leading-relaxed font-light">
-              {successMsg}
-            </p>
-            <div className="pt-2">
-              <Button
-                variant="primary"
-                size="md"
-                className="w-full"
-                onClick={() => navigate('/login')}
-              >
-                Proceed to Sign In
-              </Button>
+
+            {/* 6 Digit OTP Box Inputs */}
+            <div className="flex justify-center gap-2 sm:gap-3">
+              {otp.map((data, index) => (
+                <input
+                  key={index}
+                  type="text"
+                  maxLength="1"
+                  value={data}
+                  onChange={(e) => handleOtpChange(e.target, index)}
+                  onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                  onPaste={handleOtpPaste}
+                  onFocus={(e) => e.target.select()}
+                  className="w-11 h-13 sm:w-12 sm:h-14 bg-slate-900 border-2 border-slate-800 focus:border-sky-400 rounded-2xl text-center text-xl sm:text-2xl font-black text-sky-400 focus:outline-none transition-all shadow-inner"
+                />
+              ))}
             </div>
-          </div>
+
+            <Button
+              type="submit"
+              size="lg"
+              variant="primary"
+              className="w-full"
+              disabled={verifying}
+            >
+              {verifying ? 'Verifying OTP...' : 'Confirm 6-Digit Code'}
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => setShowOtpPanel(false)}
+              className="text-xs text-slate-400 hover:text-slate-200 underline block mx-auto transition-colors"
+            >
+              Back to Signup Form
+            </button>
+          </form>
         ) : (
           /* Signup Form */
           <form onSubmit={handleSignUp} className="space-y-4">

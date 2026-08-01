@@ -35,13 +35,29 @@ export function LoginPage() {
       
       navigate('/dashboard');
     } catch (err) {
-      setErrorMsg(err.message);
+      setErrorMsg(typeof err === 'string' ? err : (err?.message || 'Invalid login credentials'));
     }
   };
 
-  const handleGoogleAuth = () => {
-    // TODO: Connect Google OAuth
-    navigate('/dashboard');
+  const handleGoogleAuth = async () => {
+    setErrorMsg('');
+    if (!isSupabaseConfigured) {
+      // Local Workshop Mode
+      navigate('/dashboard');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      setErrorMsg(typeof err === 'string' ? err : (err?.message || 'Google Sign-In failed'));
+    }
   };
 
   return (

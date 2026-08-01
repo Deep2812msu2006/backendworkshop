@@ -10,6 +10,7 @@ import { ResortDetailsPage } from '../pages/ResortDetailsPage';
 import { SignUpPage } from '../pages/SignUpPage';
 import { LoginPage } from '../pages/LoginPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { UserProfilePage } from '../pages/UserProfilePage';
 import { ContactPage } from '../pages/ContactPage';
@@ -32,6 +33,7 @@ export function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/owner/login" element={<OwnerLoginPage />} />
         <Route path="/owner/dashboard" element={<OwnerDashboardPage />} />
