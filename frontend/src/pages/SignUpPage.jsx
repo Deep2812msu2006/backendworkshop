@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Palmtree, ArrowRight, ShieldCheck } from 'lucide-react';
+import { User, Mail, Lock, Palmtree, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
@@ -18,6 +18,7 @@ export function SignUpPage() {
     confirmPassword: ''
   });
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -26,6 +27,7 @@ export function SignUpPage() {
   const handleSignUp = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+    setSuccessMsg('');
 
     if (formData.password !== formData.confirmPassword) {
       setErrorMsg('Passwords do not match');
@@ -34,8 +36,7 @@ export function SignUpPage() {
 
     if (!isSupabaseConfigured) {
       // Local Workshop Mode (without .env)
-      alert('⚡ Local Workshop Mode: Account created locally!\n\n(Note: Without .env, this is in-memory only. Once students add .env and connect Supabase, signups will save directly to the database!)');
-      navigate('/login');
+      setSuccessMsg('⚡ Local Workshop Mode: Account created in frontend memory! (Connect Supabase in .env to persist signups in database)');
       return;
     }
 
@@ -60,12 +61,10 @@ export function SignUpPage() {
 
         if (insertError) {
           console.error('Error inserting into users table:', insertError);
-          // If insert fails (maybe due to RLS policies), we log it but still let them login if auth succeeded.
         }
       }
 
-      alert('Sign up successful! (Check your email if confirmation is enabled in Supabase)');
-      navigate('/login');
+      setSuccessMsg('🎉 Account created successfully! Please check your email inbox to confirm your registration.');
     } catch (err) {
       setErrorMsg(err.message);
     }
@@ -90,13 +89,34 @@ export function SignUpPage() {
         </div>
 
         {errorMsg && (
-          <div className="p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-200 text-sm text-center">
+          <div className="p-3 bg-red-500/20 border border-red-500 rounded-xl text-red-200 text-xs text-center font-medium">
             {errorMsg}
           </div>
         )}
 
-        {/* Signup Form */}
-        <form onSubmit={handleSignUp} className="space-y-4">
+        {successMsg ? (
+          <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-4 animate-fadeIn">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+            <h3 className="font-extrabold text-white text-lg">Registration Successful!</h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-light">
+              {successMsg}
+            </p>
+            <div className="pt-2">
+              <Button
+                variant="primary"
+                size="md"
+                className="w-full"
+                onClick={() => navigate('/login')}
+              >
+                Proceed to Sign In
+              </Button>
+            </div>
+          </div>
+        ) : (
+          /* Signup Form */
+          <form onSubmit={handleSignUp} className="space-y-4">
           <Input
             label="Full Name"
             name="fullName"
@@ -145,6 +165,7 @@ export function SignUpPage() {
             Create Account
           </Button>
         </form>
+        )}
 
         {/* Divider */}
         <div className="relative flex items-center justify-center my-4">

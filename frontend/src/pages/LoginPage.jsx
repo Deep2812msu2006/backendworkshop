@@ -21,7 +21,6 @@ export function LoginPage() {
 
     if (!isSupabaseConfigured) {
       // Local Workshop Mode (without .env)
-      alert('⚡ Local Workshop Mode: Signed in locally!\n\n(Supabase is not configured in .env yet. Once students add .env, authentication will run through Supabase!)');
       navigate('/dashboard');
       return;
     }

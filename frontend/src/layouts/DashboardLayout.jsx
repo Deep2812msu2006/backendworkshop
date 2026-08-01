@@ -16,22 +16,25 @@ export function DashboardLayout() {
 
   useEffect(() => {
     async function fetchUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase.from('users').select('name, membership_tier').eq('id', user.id).single();
-        if (data) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase.from('users').select('name, membership_tier, avatar').eq('id', user.id).maybeSingle();
+          const defaultName = user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'User');
           setUserProfile({
-            name: data.name || user.email.split('@')[0],
+            name: data?.name || defaultName,
+            avatar: data?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            membershipTier: data?.membership_tier || 'Standard Member'
+          });
+        } else {
+          setUserProfile({
+            name: 'Guest (Not Logged In)',
             avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-            membershipTier: data.membership_tier || 'Standard Member'
+            membershipTier: 'Visitor'
           });
         }
-      } else {
-        setUserProfile({
-          name: 'Guest (Not Logged In)',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-          membershipTier: 'Visitor'
-        });
+      } catch (err) {
+        console.error("DashboardLayout fetchUser Error:", err);
       }
     }
     fetchUser();

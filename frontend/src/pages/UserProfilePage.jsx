@@ -37,32 +37,53 @@ export function UserProfilePage() {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
           // Fallback if not logged in
-          setProfile(prev => ({ ...prev, name: 'Guest (Not Logged In)' }));
+          setProfile(prev => ({ ...prev, name: 'Guest (Not Logged In)', email: 'guest@example.com' }));
           setLoading(false);
           return;
         }
+
+        const fallbackName = user.user_metadata?.full_name || user.email.split('@')[0];
 
         const { data, error } = await supabase
           .from('users')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (error) {
-          console.error("Error fetching user profile:", error);
-        } else if (data) {
+        if (data) {
           setProfile({
-            name: data.name || '',
-            email: data.email || '',
+            name: data.name || fallbackName,
+            email: data.email || user.email || '',
             phone: data.phone || '',
             address: data.address || '',
             avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
             memberSince: data.member_since || 'Recently',
             membershipTier: data.membership_tier || 'Standard Member'
           });
+        } else {
+          // Profile row doesn't exist yet - construct from Auth details & auto-upsert
+          const newProfile = {
+            name: fallbackName,
+            email: user.email || '',
+            phone: '',
+            address: '',
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            memberSince: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+            membershipTier: 'Standard Member'
+          };
+          setProfile(newProfile);
+
+          // Save row to users table
+          await supabase.from('users').upsert({
+            id: user.id,
+            name: newProfile.name,
+            email: newProfile.email,
+            member_since: newProfile.memberSince,
+            membership_tier: newProfile.membershipTier
+          });
         }
       } catch (err) {
-        console.error("Error:", err);
+        console.error("Error fetching profile:", err);
       } finally {
         setLoading(false);
       }

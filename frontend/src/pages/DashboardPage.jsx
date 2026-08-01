@@ -21,18 +21,29 @@ export function DashboardPage() {
   });
 
   useEffect(() => {
-    async function fetchNameAndBookings() {
+    async function fetchName() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase.from('users').select('name').eq('id', user.id).maybeSingle();
+          if (data && data.name) {
+            setUserName(data.name);
+          } else {
+            setUserName(user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'User'));
+          }
+        } else {
+          setUserName('Guest');
+        }
+      } catch (err) {
+        console.error("DashboardPage fetchName error:", err);
+        setUserName('Guest');
+      }
+    }
+    fetchName();
+
+    async function fetchBookings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Fetch User Profile Name
-        const { data: profileData } = await supabase.from('users').select('name').eq('id', user.id).single();
-        if (profileData && profileData.name) {
-          setUserName(profileData.name);
-        } else {
-          setUserName(user.email.split('@')[0]);
-        }
-
-        // Fetch User Bookings
         const { data: userBookings, error } = await supabase
           .from('bookings')
           .select('*')
