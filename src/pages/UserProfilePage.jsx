@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, Camera, Save, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { supabase } from '../utils/supabaseClient';
 import { dummyUser } from '../data/user';
 
 // TODO: Connect Update Profile API
@@ -23,11 +24,35 @@ export function UserProfilePage() {
     setProfile(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    // TODO: Connect Update Profile API
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 4000);
+    try {
+      // 1. Get the currently logged-in user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error("You must be logged in to update your profile.");
+      }
+
+      // 2. Update their data in our custom 'users' table
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: profile.name,
+          phone: profile.phone,
+          address: profile.address,
+          avatar: profile.avatar
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 4000);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert(error.message);
+    }
   };
 
   return (
@@ -48,7 +73,7 @@ export function UserProfilePage() {
       {savedSuccess && (
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-3 animate-fadeIn text-sm">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
-          <span>Profile changes updated successfully! (Frontend state updated. // TODO: Connect Update Profile API)</span>
+          <span>Profile changes saved to Supabase successfully!</span>
         </div>
       )}
 

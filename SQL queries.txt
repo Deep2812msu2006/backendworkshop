@@ -1,0 +1,101 @@
+-- ==========================================
+-- 1. DROP EXISTING TABLES (Optional)
+-- Run these if you need to reset your database
+-- ==========================================
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS resorts;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS activities;
+
+-- ==========================================
+-- 2. CREATE TABLES (Unrestricted for Workshop)
+-- ==========================================
+
+-- The Users Table
+CREATE TABLE users (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  avatar TEXT,
+  member_since TEXT,
+  membership_tier TEXT
+);
+
+-- The Resorts Table
+CREATE TABLE resorts (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  location TEXT,
+  price NUMERIC,
+  rating NUMERIC,
+  reviews_count INTEGER,
+  image TEXT,
+  description TEXT,
+  featured BOOLEAN
+);
+
+-- The Bookings Table
+-- NOTE: Foreign key constraints (REFERENCES) have been removed 
+-- to prevent strict relationship errors during the student workshop.
+CREATE TABLE bookings (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  resort_id TEXT,
+  check_in DATE,
+  check_out DATE,
+  guests INTEGER,
+  total_price NUMERIC,
+  status TEXT
+);
+
+-- The Activities Table
+CREATE TABLE activities (
+  id TEXT PRIMARY KEY,
+  title TEXT,
+  description TEXT,
+  time TEXT
+);
+
+-- ==========================================
+-- 2.5 DISABLE ROW LEVEL SECURITY
+-- This ensures students don't get permission errors
+-- ==========================================
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE resorts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE bookings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE activities DISABLE ROW LEVEL SECURITY;
+
+-- ==========================================
+-- 3. INSERT ALL DUMMY DATA
+-- ==========================================
+
+-- Insert dummy User
+INSERT INTO users (id, name, email, phone, address, avatar, member_since, membership_tier)
+VALUES 
+  ('user-101', 'Alexander Wright', 'alexander.wright@luxuryresorts.com', '+1 (555) 234-5678', '742 Ocean Drive, Suite 12, Miami Beach, FL 33139', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80', 'January 2025', 'Platinum VIP Member');
+
+-- Insert ALL 6 Resorts from the Frontend
+INSERT INTO resorts (id, name, location, price, rating, reviews_count, image, description, featured)
+VALUES 
+  ('1', 'Aura Ocean Breeze Sanctuary', 'Maldives, South Atoll', 650, 4.9, 128, 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80', 'Perched over pristine turquoise ocean waters, Aura Ocean Breeze Sanctuary provides an unparalleled ultra-luxury experience.', TRUE),
+  ('2', 'Serenity Alpine Chalet & Spa', 'Zermatt, Switzerland', 520, 4.8, 94, 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80', 'Nestled at the base of snow-capped mountains, Serenity Alpine Chalet offers cozy timber interiors.', TRUE),
+  ('3', 'Emerald Oasis Cliffside Estate', 'Santorini, Greece', 480, 4.9, 156, 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1200&q=80', 'Iconic whitewashed architecture overlooking the Mediterranean caldera.', TRUE),
+  ('4', 'Azure Bamboo Jungle Retreat', 'Ubud, Bali, Indonesia', 340, 4.7, 88, 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80', 'Immerse yourself in lush rainforest canopy. Eco-friendly luxury suites with open-air stone tubs.', TRUE),
+  ('5', 'Royal Mirage Desert Oasis', 'Dubai, United Arab Emirates', 780, 4.95, 210, 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80', 'A palace in the sands. Experience opulent Arabian architecture and private dune safaris.', TRUE),
+  ('6', 'Whispering Palms Ocean Villa', 'Maui, Hawaii, USA', 590, 4.85, 112, 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80', 'Front-row Pacific oceanfront living. Private beach access and Hawaiian luau dinners.', TRUE);
+
+-- Insert dummy Bookings
+INSERT INTO bookings (id, resort_id, user_id, check_in, check_out, guests, total_price, status)
+VALUES 
+  ('BK-9021', '1', 'user-101', '2026-08-15', '2026-08-20', 2, 3250, 'Confirmed'),
+  ('BK-8840', '2', 'user-101', '2026-11-10', '2026-11-15', 2, 2600, 'Upcoming'),
+  ('BK-7123', '3', 'user-101', '2026-04-02', '2026-04-06', 1, 1920, 'Completed');
+
+-- Insert ALL Events/Activities
+INSERT INTO activities (id, title, description, time)
+VALUES 
+  ('evt-1', 'Sunset Catamaran Champagne Cruise', 'Sail into the golden horizon on a luxury yacht featuring champagne, fresh seafood, and live acoustic music.', '2026-08-18'),
+  ('evt-2', 'Full Moon Beachside Luau & Gourmet Feast', 'An authentic Hawaiian luau under starry skies with traditional fire dancers and gourmet multi-course buffet.', '2026-08-20'),
+  ('evt-3', 'Helicopter Alpine Skiing Expedition', 'Helicopter drop onto untouched powder snow peaks accompanied by certified Matterhorn mountain guides.', '2026-11-12');

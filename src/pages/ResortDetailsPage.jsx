@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { ReviewCard } from '../components/ReviewCard';
 import { Loader } from '../components/Loader';
 import { resortsData } from '../data/resorts';
+import { supabase } from '../utils/supabaseClient';
 
 // TODO: Fetch Resorts from API
 // TODO: Booking API
@@ -21,10 +22,30 @@ export function ResortDetailsPage() {
 
   const images = resort.gallery && resort.gallery.length > 0 ? resort.gallery : [resort.image];
 
-  const handleBooking = (e) => {
+  const handleBooking = async (e) => {
     e.preventDefault();
-    // TODO: Booking API integration will be done here
-    setBookingSuccess(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase.from('bookings').insert([{
+        id: `BK-${Date.now()}`,
+        user_id: user ? user.id : 'user-101', // Fallback to dummy user if not logged in
+        resort_id: resort.id,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests: guests,
+        total_price: (resort.price * 3) + 150, // 3 nights + $150 service fee
+        status: 'Confirmed'
+      }]);
+
+      if (error) throw error;
+
+      setBookingSuccess(true);
+    } catch (err) {
+      console.error("Booking Error:", err);
+      alert("Booking failed: " + err.message);
+    }
   };
 
   if (!resort) {
@@ -171,8 +192,8 @@ export function ResortDetailsPage() {
                 <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-400" />
                 <h4 className="font-bold text-lg text-white">Booking Request Initiated!</h4>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  // TODO: Connect Booking API. <br />
-                  Your reservation dates have been temporarily locked for backend workshop integration.
+                  Your booking has been successfully saved to Supabase! <br />
+                  Your reservation dates are now locked in.
                 </p>
                 <Button
                   size="sm"

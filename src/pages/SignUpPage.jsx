@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Palmtree, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { supabase } from '../utils/supabaseClient';
 
 // TODO: Connect Supabase Authentication
 // TODO: Connect Google OAuth
@@ -16,15 +17,51 @@ export function SignUpPage() {
     password: '',
     confirmPassword: ''
   });
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
-    // TODO: Connect Supabase Sign Up & Email Verification
-    navigate('/dashboard');
+    setErrorMsg('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMsg('Passwords do not match');
+      return;
+    }
+
+    try {
+      // 1. Sign up with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) throw error;
+
+      // 2. Insert extra data into our custom 'users' table
+      if (data.user) {
+        const { error: insertError } = await supabase.from('users').insert([{
+          id: data.user.id,
+          name: formData.fullName,
+          email: formData.email,
+          member_since: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          membership_tier: 'Standard Member'
+        }]);
+
+        if (insertError) {
+          console.error('Error inserting into users table:', insertError);
+          // If insert fails (maybe due to RLS policies), we log it but still let them login if auth succeeded.
+        }
+      }
+
+      alert('Sign up successful! (Check your email if confirmation is enabled in Supabase)');
+      navigate('/login');
+    } catch (err) {
+      setErrorMsg(err.message);
+    }
   };
 
   const handleGoogleAuth = () => {
@@ -44,6 +81,12 @@ export function SignUpPage() {
           <h2 className="text-2xl font-black text-white tracking-tight">Create Your Account</h2>
           <p className="text-xs text-slate-400">Join Aura Resorts VIP Membership today</p>
         </div>
+
+        {errorMsg && (
+          <div className="p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-200 text-sm text-center">
+            {errorMsg}
+          </div>
+        )}
 
         {/* Signup Form */}
         <form onSubmit={handleSignUp} className="space-y-4">

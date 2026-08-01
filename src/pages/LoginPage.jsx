@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Palmtree, LogIn } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { supabase } from '../utils/supabaseClient';
 
 // TODO: Connect Supabase Authentication
 // TODO: Connect Supabase Login
@@ -12,11 +13,24 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // TODO: Connect Supabase Login API
-    navigate('/dashboard');
+    setErrorMsg('');
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      
+      navigate('/dashboard');
+    } catch (err) {
+      setErrorMsg(err.message);
+    }
   };
 
   const handleGoogleAuth = () => {
@@ -36,6 +50,12 @@ export function LoginPage() {
           <h2 className="text-2xl font-black text-white tracking-tight">Welcome Back</h2>
           <p className="text-xs text-slate-400">Sign in to manage your luxury bookings</p>
         </div>
+
+        {errorMsg && (
+          <div className="p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-200 text-sm text-center">
+            {errorMsg}
+          </div>
+        )}
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4">

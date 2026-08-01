@@ -3,6 +3,7 @@ import { PlusCircle, Building2, Calendar, DollarSign, Sparkles, CheckCircle2, Tr
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { resortsData, dummyEventsData } from '../data/resorts';
+import { supabase } from '../utils/supabaseClient';
 
 // TODO: Create Resort API (Supabase Insert)
 // TODO: Create Event Activity API (Supabase Insert)
@@ -38,48 +39,85 @@ export function OwnerDashboardPage() {
   });
   const [eventSuccess, setEventSuccess] = useState(false);
 
-  const handleResortSubmit = (e) => {
+  const handleResortSubmit = async (e) => {
     e.preventDefault();
-    const newResort = {
-      id: String(Date.now()),
-      name: resortForm.name,
-      location: resortForm.location,
-      price: Number(resortForm.price),
-      rating: Number(resortForm.rating),
-      reviewsCount: 1,
-      image: resortForm.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80",
-      gallery: [resortForm.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80"],
-      description: resortForm.description,
-      featured: true,
-      facilities: resortForm.facilities.split(',').map(f => f.trim()).filter(Boolean),
-      reviews: []
-    };
+    const newResortId = String(Date.now());
+    
+    try {
+      const { error } = await supabase.from('resorts').insert([{
+        id: newResortId,
+        name: resortForm.name,
+        location: resortForm.location,
+        price: Number(resortForm.price),
+        rating: Number(resortForm.rating),
+        reviews_count: 1,
+        image: resortForm.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80",
+        description: resortForm.description,
+        featured: true
+      }]);
 
-    setResortsList([newResort, ...resortsList]);
-    resortsData.unshift(newResort); // update shared state
-    setResortSuccess(true);
-    setResortForm({ name: '', location: '', price: '', rating: '4.9', image: '', description: '', facilities: '' });
-    setTimeout(() => setResortSuccess(false), 4000);
+      if (error) throw error;
+
+      const newResort = {
+        id: newResortId,
+        name: resortForm.name,
+        location: resortForm.location,
+        price: Number(resortForm.price),
+        rating: Number(resortForm.rating),
+        reviewsCount: 1,
+        image: resortForm.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80",
+        gallery: [resortForm.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80"],
+        description: resortForm.description,
+        featured: true,
+        facilities: resortForm.facilities.split(',').map(f => f.trim()).filter(Boolean),
+        reviews: []
+      };
+
+      setResortsList([newResort, ...resortsList]);
+      resortsData.unshift(newResort); // update shared state
+      setResortSuccess(true);
+      setResortForm({ name: '', location: '', price: '', rating: '4.9', image: '', description: '', facilities: '' });
+      setTimeout(() => setResortSuccess(false), 4000);
+    } catch (err) {
+      console.error("Resort Insert Error:", err);
+      alert("Failed to add resort: " + err.message);
+    }
   };
 
-  const handleEventSubmit = (e) => {
+  const handleEventSubmit = async (e) => {
     e.preventDefault();
-    const newEvent = {
-      id: `evt-${Date.now()}`,
-      title: eventForm.title,
-      resortName: eventForm.resortName,
-      category: eventForm.category,
-      date: eventForm.date,
-      price: Number(eventForm.price),
-      maxParticipants: Number(eventForm.maxParticipants),
-      description: eventForm.description
-    };
+    const newEventId = `evt-${Date.now()}`;
 
-    setEventsList([newEvent, ...eventsList]);
-    dummyEventsData.unshift(newEvent); // update shared state
-    setEventSuccess(true);
-    setEventForm({ title: '', resortName: resortsData[0]?.name || '', category: 'Water Sports & Sailing', date: '', price: '', maxParticipants: '10', description: '' });
-    setTimeout(() => setEventSuccess(false), 4000);
+    try {
+      const { error } = await supabase.from('activities').insert([{
+        id: newEventId,
+        title: eventForm.title,
+        description: eventForm.description,
+        time: eventForm.date
+      }]);
+
+      if (error) throw error;
+
+      const newEvent = {
+        id: newEventId,
+        title: eventForm.title,
+        resortName: eventForm.resortName,
+        category: eventForm.category,
+        date: eventForm.date,
+        price: Number(eventForm.price),
+        maxParticipants: Number(eventForm.maxParticipants),
+        description: eventForm.description
+      };
+
+      setEventsList([newEvent, ...eventsList]);
+      dummyEventsData.unshift(newEvent); // update shared state
+      setEventSuccess(true);
+      setEventForm({ title: '', resortName: resortsData[0]?.name || '', category: 'Water Sports & Sailing', date: '', price: '', maxParticipants: '10', description: '' });
+      setTimeout(() => setEventSuccess(false), 4000);
+    } catch (err) {
+      console.error("Activity Insert Error:", err);
+      alert("Failed to add activity: " + err.message);
+    }
   };
 
   const handleDeleteResort = (id) => {
