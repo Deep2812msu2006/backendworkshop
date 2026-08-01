@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MapPin, Star, Calendar, Users, ShieldCheck, CheckCircle2, ArrowLeft, Send, Sparkles, LogIn } from 'lucide-react';
+import { MapPin, Star, Calendar, Users, ShieldCheck, CheckCircle2, ArrowLeft, Send, Sparkles, LogIn, Lock, X, User } from 'lucide-react';
 import { Button } from '../components/Button';
 import { ReviewCard } from '../components/ReviewCard';
 import { Loader } from '../components/Loader';
@@ -21,6 +21,8 @@ export function ResortDetailsPage() {
   const [guests, setGuests] = useState(2);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (isSupabaseConfigured) {
@@ -34,6 +36,7 @@ export function ResortDetailsPage() {
 
   const handleBooking = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
 
     if (!isSupabaseConfigured) {
       // Local Workshop Mode (without .env)
@@ -45,8 +48,7 @@ export function ResortDetailsPage() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        alert("🔒 Authentication Required: Please log in or sign up before booking a resort!");
-        navigate('/login');
+        setShowAuthModal(true);
         return;
       }
 
@@ -66,7 +68,7 @@ export function ResortDetailsPage() {
       setBookingSuccess(true);
     } catch (err) {
       console.error("Booking Error:", err);
-      alert("Booking failed: " + err.message);
+      setErrorMessage("Booking failed: " + err.message);
     }
   };
 
@@ -292,6 +294,12 @@ export function ResortDetailsPage() {
                   </div>
                 </div>
 
+                {errorMessage && (
+                  <div className="p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-xs text-center font-medium">
+                    {errorMessage}
+                  </div>
+                )}
+
                 {/* Submit */}
                 {!currentUser && isSupabaseConfigured && (
                   <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 text-center flex items-center justify-center gap-2 font-medium">
@@ -315,6 +323,52 @@ export function ResortDetailsPage() {
         </div>
 
       </div>
+
+      {/* Custom Auth Required Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-md glass-panel p-8 sm:p-10 rounded-3xl border border-sky-500/30 shadow-2xl space-y-6 text-center relative">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/60 hover:bg-slate-700 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-xl shadow-sky-500/30">
+              <Lock className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-white tracking-tight">Authentication Required</h3>
+              <p className="text-xs text-slate-300 leading-relaxed font-light">
+                Please sign in to your account or create a new account to confirm your luxury resort reservation.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <Link to="/login" className="block">
+                <Button size="lg" variant="primary" icon={LogIn} className="w-full">
+                  Sign In to Account
+                </Button>
+              </Link>
+              
+              <Link to="/signup" className="block">
+                <Button size="lg" variant="outline" icon={User} className="w-full">
+                  Create New Account
+                </Button>
+              </Link>
+
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="text-xs text-slate-400 hover:text-slate-200 underline pt-2 block mx-auto transition-colors"
+              >
+                Cancel & Continue Browsing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
