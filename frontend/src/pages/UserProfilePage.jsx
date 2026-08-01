@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Phone, MapPin, Camera, Save, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -18,6 +18,18 @@ export function UserProfilePage() {
   });
 
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfile(prev => ({ ...prev, avatar: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     async function fetchUserProfile() {
@@ -88,7 +100,9 @@ export function UserProfilePage() {
           id: user.id,
           name: profile.name,
           email: profile.email,
-          // phone, address, and avatar were removed from the SQL table
+          phone: profile.phone,
+          address: profile.address,
+          avatar: profile.avatar,
           member_since: profile.memberSince || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
           membership_tier: profile.membershipTier || 'Standard Member'
         });
@@ -138,10 +152,18 @@ export function UserProfilePage() {
               alt={profile.name}
               className="w-32 h-32 rounded-full object-cover border-4 border-sky-400/40 shadow-xl"
             />
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+            />
             <button
               type="button"
-              className="absolute bottom-1 right-1 bg-sky-500 p-2.5 rounded-full text-white shadow-lg hover:bg-sky-400 transition-colors"
-              title="Change Profile Avatar"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-1 right-1 bg-sky-500 p-2.5 rounded-full text-white shadow-lg hover:bg-sky-400 transition-colors cursor-pointer"
+              title="Upload Photo from Device"
             >
               <Camera className="w-4 h-4" />
             </button>
