@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { MapPin, Star, Calendar, Users, ShieldCheck, CheckCircle2, ArrowLeft, Send, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { MapPin, Star, Calendar, Users, ShieldCheck, CheckCircle2, ArrowLeft, Send, Sparkles, LogIn } from 'lucide-react';
 import { Button } from '../components/Button';
 import { ReviewCard } from '../components/ReviewCard';
 import { Loader } from '../components/Loader';
@@ -12,6 +12,7 @@ import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 
 export function ResortDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const resort = resortsData.find((r) => r.id === id) || resortsData[0];
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -19,6 +20,15 @@ export function ResortDetailsPage() {
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(2);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      supabase.auth.getUser().then(({ data }) => {
+        setCurrentUser(data?.user || null);
+      });
+    }
+  }, []);
 
   const images = resort.gallery && resort.gallery.length > 0 ? resort.gallery : [resort.image];
 
@@ -32,11 +42,17 @@ export function ResortDetailsPage() {
     }
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
+      if (authError || !user) {
+        alert("🔒 Authentication Required: Please log in or sign up before booking a resort!");
+        navigate('/login');
+        return;
+      }
+
       const { error } = await supabase.from('bookings').insert([{
         id: `BK-${Date.now()}`,
-        user_id: user ? user.id : 'user-101', // Fallback to dummy user if not logged in
+        user_id: user.id,
         resort_id: resort.id,
         check_in: checkIn,
         check_out: checkOut,
@@ -277,6 +293,13 @@ export function ResortDetailsPage() {
                 </div>
 
                 {/* Submit */}
+                {!currentUser && isSupabaseConfigured && (
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 text-center flex items-center justify-center gap-2 font-medium">
+                    <LogIn className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>Please sign in or create an account to book</span>
+                  </div>
+                )}
+
                 <Button type="submit" size="lg" variant="primary" icon={Send} className="w-full">
                   Book Now
                 </Button>
