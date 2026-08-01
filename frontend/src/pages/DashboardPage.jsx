@@ -82,7 +82,8 @@ export function DashboardPage() {
         setUserName('Guest');
       }
     }
-    fetchNameAndBookings();
+    fetchName();
+    fetchBookings();
   }, []);
 
   return (
