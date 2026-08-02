@@ -100,8 +100,13 @@ export function SignUpPage() {
       }
 
       if (!OTP_ENABLED) {
-        // SESSION 1 mode: skip OTP, go straight to dashboard
-        navigate('/dashboard');
+        if (data.session) {
+          // Instant Login (Email Confirmation turned OFF in Supabase)
+          navigate('/dashboard');
+        } else {
+          // Email Confirmation Link sent (Email Confirmation turned ON in Supabase)
+          setSuccessMsg(`🎉 Account created! A confirmation link has been sent to ${formData.email}. Please check your inbox and click the link to sign in.`);
+        }
         return;
       }
       setShowOtpPanel(true);
@@ -184,7 +189,20 @@ export function SignUpPage() {
           </div>
         )}
 
-        {showOtpPanel ? (
+        {successMsg && !showOtpPanel ? (
+          <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3 animate-fadeIn">
+            <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+            <h3 className="font-extrabold text-white text-lg">Check Your Email Inbox</h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-normal">
+              {successMsg}
+            </p>
+            <div className="pt-2">
+              <Link to="/login" className="text-xs text-sky-400 hover:underline font-semibold">
+                Go to Sign In Page →
+              </Link>
+            </div>
+          </div>
+        ) : showOtpPanel ? (
           <form onSubmit={handleVerifyOtp} className="space-y-6 animate-fadeIn">
             <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-center space-y-2">
               <CheckCircle2 className="w-8 h-8 text-sky-400 mx-auto" />
