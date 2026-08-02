@@ -9,6 +9,8 @@ import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 // TODO: Connect Google OAuth
 // TODO: Email Verification
 
+const OTP_ENABLED = import.meta.env.VITE_OTP_ENABLED === 'true';
+
 export function SignUpPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -97,6 +99,11 @@ export function SignUpPage() {
         });
       }
 
+      if (!OTP_ENABLED) {
+        // SESSION 1 mode: skip OTP, go straight to dashboard
+        navigate('/dashboard');
+        return;
+      }
       setShowOtpPanel(true);
       setSuccessMsg(`🎉 Account created! We sent a 6-digit OTP code to ${formData.email}. Please enter it below:`);
     } catch (err) {
