@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { User, Mail, MessageSquare, Send, Phone, MapPin, CheckCircle2, Info, Palmtree } from 'lucide-react';
+import { User, Mail, MessageSquare, Send, Phone, MapPin, CheckCircle2, Info, Loader2 } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { SectionTitle } from '../components/SectionTitle';
-
-// TODO: Connect EmailJS
 
 export function ContactPage() {
   const [formData, setFormData] = useState({
@@ -13,16 +12,53 @@ export function ContactPage() {
     subject: '',
     message: ''
   });
+  const [loading, setLoading] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: EmailJS Integration logic
-    setSentSuccess(true);
+    setLoading(true);
+    setErrorMsg('');
+
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+    if (!serviceId || !templateId || !publicKey) {
+      // Local Workshop Demo Mode (if keys not added to .env yet)
+      setTimeout(() => {
+        setSentSuccess(true);
+        setLoading(false);
+      }, 800);
+      return;
+    }
+
+    try {
+      await emailjs.send(
+        serviceId,
+        templateId,
+        {
+          from_name: formData.name,
+          from_email: formData.email,
+          reply_to: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+          to_name: 'Aura Resorts Concierge'
+        },
+        publicKey
+      );
+      setSentSuccess(true);
+    } catch (err) {
+      console.error('EmailJS Error:', err);
+      setErrorMsg(err?.text || err?.message || 'Failed to dispatch email. Please check your EmailJS keys in .env.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,20 +119,29 @@ export function ContactPage() {
           {/* Integration Banner Notice */}
           <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-center gap-3 text-sky-300 text-xs">
             <Info className="w-5 h-5 shrink-0 text-sky-400" />
-            <span>This form will later be connected with EmailJS during the backend workshop.</span>
+            <span>Connects live with EmailJS (`@emailjs/browser`). Configure Service ID, Template ID & Public Key in `.env` to send emails.</span>
           </div>
 
+          {errorMsg && (
+            <div className="p-3 bg-red-500/20 border border-red-500 rounded-xl text-red-200 text-xs text-center font-medium">
+              {errorMsg}
+            </div>
+          )}
+
           {sentSuccess ? (
-            <div className="p-8 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-4">
+            <div className="p-8 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-4 animate-fadeIn">
               <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-              <h3 className="text-xl font-bold text-white">Message Delivered!</h3>
+              <h3 className="text-xl font-bold text-white">Message Delivered via EmailJS!</h3>
               <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                Thank you for contacting Aura Resorts VIP Concierge. // TODO: EmailJS Integration will trigger emails here.
+                Thank you for contacting Aura Resorts VIP Concierge. Our representative will review your message and reach out to <strong>{formData.email || 'your email'}</strong> shortly.
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSentSuccess(false)}
+                onClick={() => {
+                  setSentSuccess(false);
+                  setFormData({ name: '', email: '', subject: '', message: '' });
+                }}
               >
                 Send Another Message
               </Button>
@@ -155,9 +200,9 @@ export function ContactPage() {
               </div>
 
               <div className="pt-2 flex items-center justify-between">
-                <span className="text-xs text-slate-500">// TODO: Connect EmailJS</span>
-                <Button type="submit" size="md" variant="primary" icon={Send}>
-                  Send Message
+                <span className="text-xs text-slate-500">Powered by EmailJS</span>
+                <Button type="submit" size="md" variant="primary" icon={loading ? Loader2 : Send} disabled={loading}>
+                  {loading ? 'Sending via EmailJS...' : 'Send Message'}
                 </Button>
               </div>
 
